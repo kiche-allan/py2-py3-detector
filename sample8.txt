@@ -1,0 +1,26 @@
+# ── HIDDEN ROUNDING BUG ──────────────────────────────────────────
+# Paste into the detector and click Analyse.
+# Individual round() calls often match between py2 and py3.
+# The divergence only appears when summing many .5 values.
+
+# Round integers and non-.5 values — both agree
+print(round(1.0))
+print(round(2.0))
+print(round(1.4))
+print(round(2.6))
+
+# The .5 boundary — split between versions
+print(round(0.5))
+print(round(2.5))
+print(round(4.5))
+
+# Sum over 10 half-values
+# py2 total: 55   py3 total: 50 — difference of 5
+half_values = [0.5, 1.5, 2.5, 3.5, 4.5, 5.5, 6.5, 7.5, 8.5, 9.5]
+print(sum(round(v) for v in half_values))
+
+# Commission at 0.5 per unit
+# py2: 9   py3: 8
+units = [1, 2, 3, 4, 5]
+total_commission = sum(round(u * 0.5) for u in units)
+print(total_commission)

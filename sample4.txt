@@ -1,0 +1,27 @@
+# ── DICT KEYS BUG ────────────────────────────────────────────────
+# Paste into the detector and click Analyse.
+# py2: dict.keys() returns a list
+# py3: dict.keys() returns a live view — no indexing, no .sort()
+
+config = {
+    "host":    "localhost",
+    "port":    5432,
+    "timeout": 30,
+    "debug":   False
+}
+
+# These work in BOTH versions
+for k in config.keys():
+    print(k)
+
+print("port" in config.keys())
+print(len(config))
+
+# Set intersection — py2: TypeError   py3: works natively
+defaults = {"host": "127.0.0.1", "port": 5432, "ssl": True}
+common = config.keys() & defaults.keys()
+print(sorted(common))
+
+# Keys only in config, not in defaults
+only_config = config.keys() - defaults.keys()
+print(sorted(only_config))

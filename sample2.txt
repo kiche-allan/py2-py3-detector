@@ -1,0 +1,28 @@
+# ── ROUNDING BUG ─────────────────────────────────────────────────
+# Paste into the detector and click Analyse.
+# py2: always rounds .5 up   py3: rounds .5 to nearest even (banker's)
+# Individual calls look fine. Sums over many .5 values diverge.
+
+# The .5 boundary — watch each line in the output panel
+print(round(0.5))
+print(round(1.5))
+print(round(2.5))
+print(round(3.5))
+print(round(4.5))
+
+# Invoice: each line rounded before summing
+# py2 total: 155   py3 total: 150 — 5 units missing
+invoice = [10.5, 20.5, 30.5, 40.5, 50.5]
+total = sum(round(line) for line in invoice)
+print(total)
+
+# Tax calculation
+subtotal = 12.5
+tax_rate = 0.175
+tax = round(subtotal * tax_rate, 2)
+print(tax)
+
+# Commission at 0.5% per deal
+deals  = [100, 200, 300, 400, 500]
+earned = sum(round(d * 0.005, 2) for d in deals)
+print(earned)

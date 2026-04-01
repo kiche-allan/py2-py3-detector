@@ -1,0 +1,31 @@
+# ── ITERATOR BUG ─────────────────────────────────────────────────
+# Paste into the detector and click Analyse.
+# map() / filter() / zip() return lazy iterators in py3.
+# Three silent bugs shown below.
+
+# Bug 1: map() truthy guard
+# py2: bool(map(f, [])) = False   py3: True — guard breaks
+users = []
+names = map(lambda u: u, users)
+print(bool(names))
+
+users2 = ["Alice", "Bob", "Charlie"]
+names2 = map(str.upper, users2)
+print(bool(names2))
+
+# Bug 2: zip() exhausted after first consumption
+# py2: both passes return data   py3: second pass is always []
+user_ids = [101, 102, 103]
+scores   = [95, 87, 72]
+z      = zip(user_ids, scores)
+result = dict(z)
+audit  = list(z)
+print(result)
+print(audit)
+
+# Bug 3: filter() — consume once then inspect
+numbers  = [1, -2, 3, -4, 5, -6]
+positive = filter(lambda x: x > 0, numbers)
+as_list  = list(positive)
+print(as_list)
+print(len(as_list))

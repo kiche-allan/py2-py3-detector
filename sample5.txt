@@ -1,0 +1,26 @@
+# ── BYTES / STR BUG ──────────────────────────────────────────────
+# Paste into the detector and click Analyse.
+# py2: bytes and str are the same type — comparison returns True
+# py3: completely separate types — comparison always returns False
+
+# Auth comparison — py2: True   py3: False (always)
+token    = b"my-secret-token"
+expected = "my-secret-token"
+print(token == expected)
+
+# Indexing bytes
+# py2: returns a single character string "h"
+# py3: returns an integer 104 (ASCII code)
+data = b"hello"
+print(data[0])
+print(data[1])
+
+# Type checks
+print(type(b"hello"))
+print(type("hello"))
+print(type(b"hello") == type("hello"))
+
+# Bytes in a list — membership check
+header_names = [b"Content-Type", b"Authorization"]
+search = "Authorization"
+print(search in header_names)

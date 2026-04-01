@@ -1,0 +1,25 @@
+# ── SORTING BUG ──────────────────────────────────────────────────
+# Paste into the detector and click Analyse.
+# py2: sorted() worked on any mix of types
+# py3: raises TypeError when comparing incompatible types
+
+# Same types — works in BOTH versions
+nums  = [5, 2, 8, 1, 9, 3]
+words = ["banana", "apple", "date", "cherry"]
+print(sorted(nums))
+print(sorted(words))
+
+# Mixed int and float — works in BOTH (compatible types)
+mixed_nums = [3, 1.5, 2, 0.5, 4.7]
+print(sorted(mixed_nums))
+
+# Tuples — works in BOTH, sorts lexicographically
+pairs = [(2, "b"), (1, "c"), (1, "a"), (3, "d")]
+print(sorted(pairs))
+
+# Reverse sort — works in BOTH
+print(sorted(nums, reverse=True))
+
+# Custom key — works in BOTH
+people = ["Charlie", "alice", "Bob"]
+print(sorted(people, key=str.lower))
