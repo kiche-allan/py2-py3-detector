@@ -5,7 +5,7 @@ A web-based tool for analyzing Python code and detecting compatibility issues be
 ## Features
 
 - **Real-time Analysis**: Paste Python code and instantly get compatibility warnings
-- **Multiple Severity Levels**: 
+- **Multiple Severity Levels**:
   - 🔴 **Critical** - Code that will fail in Python 3
   - 🟠 **High** - Significant compatibility issues
   - 🟡 **Medium** - Subtle differences that may cause problems
@@ -74,6 +74,7 @@ The detection engine uses multiple analysis strategies:
 ## Browser Compatibility
 
 Works with all modern browsers that support:
+
 - ES6+ JavaScript
 - CSS Grid
 - `textarea` elements
