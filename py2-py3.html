@@ -423,17 +423,44 @@ body {
 .probe-diff { font-size: 10px; font-weight: 700; }
 .probe-diff.bug { color: var(--critical); }
 .probe-diff.ok  { color: var(--ok); }
+
+
+/* ── Execution output panel ── */
+.exec-pane{border-top:1px solid var(--border);background:var(--surface);flex-shrink:0;}
+.exec-header{padding:9px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+.exec-outputs{display:grid;grid-template-columns:1fr 1fr;}
+.exec-out{display:flex;flex-direction:column;overflow:hidden;}
+.exec-out:first-child{border-right:1px solid var(--border);}
+.exec-out-hdr{padding:6px 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);background:var(--surface2);}
+.exec-out-label{font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;}
+.exec-out-label.lpy2{color:var(--py2);}
+.exec-out-label.lpy3{color:var(--py3);}
+.exec-out-tag{font-size:9px;padding:1px 6px;border-radius:3px;font-weight:600;letter-spacing:.04em;}
+.tag-sim{background:var(--py2-dim);color:var(--py2);border:1px solid var(--py2-border);}
+.tag-live{background:var(--py3-dim);color:var(--py3);border:1px solid var(--py3-border);}
+.exec-result{font-family:var(--mono);font-size:12px;line-height:1.65;padding:10px 12px;min-height:80px;max-height:160px;overflow-y:auto;white-space:pre-wrap;word-break:break-all;color:var(--text);}
+.exec-result.err{color:var(--critical);}
+.exec-result.empty{color:var(--muted);font-style:italic;}
+.exec-result::-webkit-scrollbar{width:3px;}
+.exec-result::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+.exec-diff-row{padding:6px 12px;font-size:11px;border-top:1px solid var(--border);display:none;align-items:center;gap:7px;}
+.diff-badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;letter-spacing:.04em;}
+.diff-same{background:var(--ok-dim);color:var(--ok);}
+.diff-diff{background:var(--critical-dim);color:var(--critical);}
 </style>
 </head>
 <body>
 <div class="shell">
+
   <div class="topbar">
     <div class="topbar-title">Python <span>2&#8596;3</span> Detection Harness</div>
     <div class="pill pill-py2">Python 2 simulated</div>
     <div class="pill pill-py3">Python 3 live</div>
     <div class="topbar-sub">Layer 1: pre-parse &middot; Layer 2: semantic &middot; Layer 3: probes</div>
   </div>
+
   <div class="body">
+
     <div class="editor-pane">
       <div class="samples">
         <span class="sample-label">Samples</span>
@@ -457,11 +484,12 @@ body {
           placeholder="# Paste Python code here and click Analyse"></textarea>
       </div>
       <div class="editor-toolbar">
-        <button class="btn btn-run"   onclick="runAnalysis()">&#9654; Analyse</button>
+        <button class="btn btn-run" onclick="runAnalysis();runExecution()">&#9654; Analyse</button>
         <button class="btn btn-ghost" onclick="clearEditor()">Clear</button>
         <span class="run-status" id="run-status"></span>
       </div>
     </div>
+
     <div class="results-pane">
       <div class="summary-bar" id="summary-bar" style="display:none">
         <span id="cnt-critical" class="count-badge"><span class="dot dot-critical"></span><span>0</span> critical</span>
@@ -479,9 +507,41 @@ body {
         <div class="probe-title">Dynamic probes &mdash; actual py2 vs py3 values</div>
         <div id="probe-rows"></div>
       </div>
+
+      <!-- Side-by-side execution output panel -->
+      <div class="exec-pane">
+        <div class="exec-header">
+          <span class="pane-label">Output</span>
+          <span style="font-size:11px;color:var(--muted)">py2 simulated &middot; py3 live</span>
+        </div>
+        <div class="exec-outputs">
+          <div class="exec-out">
+            <div class="exec-out-hdr">
+              <span class="exec-out-label lpy2">Python 2</span>
+              <span class="exec-out-tag tag-sim">simulated</span>
+            </div>
+            <div class="exec-result empty" id="exec-py2">click Run to execute</div>
+          </div>
+          <div class="exec-out">
+            <div class="exec-out-hdr">
+              <span class="exec-out-label lpy3">Python 3</span>
+              <span class="exec-out-tag tag-live">live</span>
+            </div>
+            <div class="exec-result empty" id="exec-py3">click Run to execute</div>
+          </div>
+        </div>
+        <div class="exec-diff-row" id="exec-diff-row">
+          <span style="color:var(--muted)">Result:</span>
+          <span class="diff-badge" id="exec-diff"></span>
+          <span style="color:var(--muted);font-size:11px" id="exec-diff-note"></span>
+        </div>
+      </div>
+
     </div>
+
   </div>
 </div>
+
 <script>
 /**
  * rules-preparsed.js
@@ -648,6 +708,7 @@ const PreParsedRules = (() => {
   return { run };
 
 })();
+
 /**
  * rules-semantic.js
  * Layer 2 — Semantic divergence rules.
@@ -888,6 +949,7 @@ const SemanticRules = (() => {
   return { run };
 
 })();
+
 /**
  * engine-probes.js
  * Layer 3 — Dynamic probe engine.
@@ -1107,6 +1169,7 @@ const ProbeEngine = (() => {
   return { run };
 
 })();
+
 /**
  * samples.js
  * Code samples loaded into the editor via the sample-chip buttons.
@@ -1298,6 +1361,7 @@ for i in xrange(100):
     pass`,
 
 };
+
 /**
  * ui.js
  * UI controller.
@@ -1534,6 +1598,165 @@ const UI = { toggleFinding, loadSample, clearEditor, runAnalysis };
 
 // ── Init ──────────────────────────────────────────────────────────────────
 updateLineNumbers();
+
+
+// ═══════════════════════════════════════════════════════════════════
+// EXECUTION ENGINE — py2 simulated + py3 live side-by-side
+// ═══════════════════════════════════════════════════════════════════
+const ExecutionEngine = (() => {
+
+  // py2 semantic simulators
+  function py2div(a,b){ return (Number.isInteger(a)&&Number.isInteger(b))?Math.floor(a/b):a/b; }
+  function py2round(x,n=0){ const f=Math.pow(10,n); return Math.floor(x*f+0.5)/f; }
+  function py2range(a,b,c){
+    let start,stop,step;
+    if(b===undefined){start=0;stop=a;step=1;}
+    else if(c===undefined){start=a;stop=b;step=1;}
+    else{start=a;stop=b;step=c;}
+    const r=[];for(let i=start;step>0?i<stop:i>stop;i+=step)r.push(i);return r;
+  }
+
+  // py3 iterator wrapper — single-pass, always truthy
+  class PyIter {
+    constructor(arr,name){this._arr=[...arr];this._done=false;this._name=name||'iterator';}
+    [Symbol.iterator](){if(this._done)return [][Symbol.iterator]();this._done=true;return this._arr[Symbol.iterator]();}
+    toString(){return `<${this._name} object>`;}
+  }
+  PyIter.prototype.valueOf=function(){return true;};
+
+  function py3map(fn,...iters){return new PyIter(Array.from(iters[0]).map(fn),'map');}
+  function py3filter(fn,iter){return new PyIter(Array.from(iter).filter(fn),'filter');}
+  function py3zip(...arrays){
+    const arrs=arrays.map(a=>Array.from(a)),len=Math.min(...arrs.map(a=>a.length));
+    return new PyIter(Array.from({length:len},(_,i)=>arrs.map(a=>a[i])),'zip');
+  }
+  function py3round(x,n=0){
+    if(n!==0){const f=Math.pow(10,n);return Math.round(x*f)/f;}
+    const fl=Math.floor(x),d=x-fl;
+    if(d<.5)return fl;if(d>.5)return fl+1;return fl%2===0?fl:fl+1;
+  }
+  function py3sorted(arr){
+    const copy=[...arr];
+    copy.sort((a,b)=>{
+      if(a===null||b===null||(typeof a!==typeof b&&!(typeof a==='number'&&typeof b==='number')))
+        throw new TypeError(`'<' not supported between instances of '${a===null?'NoneType':typeof a}' and '${b===null?'NoneType':typeof b}'`);
+      return a<b?-1:a>b?1:0;
+    });
+    return copy;
+  }
+
+  function fmt(v){
+    if(v===null||v===undefined)return 'None';
+    if(v===true)return 'True';if(v===false)return 'False';
+    if(v instanceof PyIter)return v.toString();
+    if(Array.isArray(v))return '['+v.map(fmt).join(', ')+']';
+    if(typeof v==='object')return '{'+Object.entries(v).map(([k,val])=>`'${k}': ${fmt(val)}`).join(', ')+'}';
+    if(typeof v==='string')return "'"+v+"'";
+    return String(v);
+  }
+
+  function toJS(code,mode){
+    let js=code;
+    js=js.replace(/#[^\n]*/g,'');
+    js=js.replace(/\bprint\s*\(([^)]*)\)/g,'__out($1)');
+    js=js.replace(/\bTrue\b/g,'true');js=js.replace(/\bFalse\b/g,'false');js=js.replace(/\bNone\b/g,'null');
+    js=js.replace(/\band\b/g,'&&');js=js.replace(/\bor\b/g,'||');js=js.replace(/\bnot\s+/g,'!');
+    js=js.replace(/\brange\s*\(/g,'__range__(');
+    js=js.replace(/\blen\s*\(/g,'__len__(');
+    js=js.replace(/\blist\s*\(/g,'__list__(');
+    js=js.replace(/\bdict\s*\(/g,'__dict__(');
+    js=js.replace(/\bstr\s*\(/g,'String(');
+    js=js.replace(/\bint\s*\(/g,'parseInt(');
+    js=js.replace(/\bfloat\s*\(/g,'parseFloat(');
+    js=js.replace(/\bsum\s*\(/g,'__sum__(');
+    js=js.replace(/\bbool\s*\(/g,'Boolean(');
+    if(mode==='py2'){
+      js=js.replace(/([a-zA-Z0-9_)\]]+)\s*\/\s*([a-zA-Z0-9_(]+)(?!\/)/g,'__div__($1,$2)');
+      js=js.replace(/\bround\s*\(/g,'__round__(');
+      js=js.replace(/\bmap\s*\(/g,'__map__(');
+      js=js.replace(/\bfilter\s*\(/g,'__filter__(');
+      js=js.replace(/\bzip\s*\(/g,'__zip__(');
+      js=js.replace(/\bsorted\s*\(/g,'__sorted__(');
+    } else {
+      js=js.replace(/\bround\s*\(/g,'__round__(');
+      js=js.replace(/\bmap\s*\(/g,'__map__(');
+      js=js.replace(/\bfilter\s*\(/g,'__filter__(');
+      js=js.replace(/\bzip\s*\(/g,'__zip__(');
+      js=js.replace(/\bsorted\s*\(/g,'__sorted__(');
+    }
+    return js;
+  }
+
+  function makeEnv(mode,lines){
+    const __out=(...args)=>lines.push(args.map(fmt).join(' '));
+    const __len=x=>{if(x instanceof PyIter)throw new TypeError(`object of type '${x._name}' has no len()`);return x.length??Object.keys(x).length;};
+    const __list=x=>x instanceof PyIter?Array.from(x):Array.isArray(x)?[...x]:Array.from(x);
+    const __dict=x=>{if(x instanceof PyIter)return Object.fromEntries(Array.from(x));if(Array.isArray(x))return Object.fromEntries(x);return x;};
+    const __sum=x=>Array.from(x).reduce((a,b)=>a+b,0);
+    const common={__out,__len,__list,__dict,__sum,__range:py2range,String,parseInt,parseFloat,Boolean,abs:Math.abs,max:Math.max,min:Math.min};
+    if(mode==='py2') return {...common,
+      __div__:py2div,__round__:py2round,
+      __map__:(fn,...a)=>Array.from(a[0]).map(fn),
+      __filter__:(fn,a)=>Array.from(a).filter(fn),
+      __zip__:(...arrays)=>{const arrs=arrays.map(a=>[...a]),len=Math.min(...arrs.map(a=>a.length));return Array.from({length:len},(_,i)=>arrs.map(a=>a[i]));},
+      __sorted__:(a,k)=>{const c=[...a];if(k)c.sort((x,y)=>{const kx=k(x),ky=k(y);return kx<ky?-1:kx>ky?1:0;});else c.sort((x,y)=>x<y?-1:x>y?1:0);return c;},
+    };
+    return {...common,
+      __round__:py3round,__map__:py3map,__filter__:py3filter,
+      __zip__:py3zip,__sorted__:py3sorted,
+    };
+  }
+
+  function execCode(source,mode){
+    const lines=[],result={output:'',error:null};
+    try{
+      const env=makeEnv(mode,lines);
+      new Function(...Object.keys(env),toJS(source,mode))(...Object.values(env));
+      result.output=lines.join('\n')||'(no output)';
+    }catch(e){result.error=`${e.constructor?.name||'Error'}: ${e.message}`;}
+    return result;
+  }
+
+  return {run:src=>({py2:execCode(src,'py2'),py3:execCode(src,'py3')})};
+})();
+
+// ── Execution UI wiring ──────────────────────────────────────────────
+function runExecution(){
+  const code=document.getElementById('code-editor').value.trim();
+  if(!code)return;
+  const {py2,py3}=ExecutionEngine.run(code);
+  const py2el=document.getElementById('exec-py2');
+  const py3el=document.getElementById('exec-py3');
+  if(py2.error){py2el.textContent=py2.error;py2el.className='exec-result err';}
+  else{py2el.textContent=py2.output;py2el.className='exec-result'+(py2.output==='(no output)'?' empty':'');}
+  if(py3.error){py3el.textContent=py3.error;py3el.className='exec-result err';}
+  else{py3el.textContent=py3.output;py3el.className='exec-result'+(py3.output==='(no output)'?' empty':'');}
+  const badge=document.getElementById('exec-diff');
+  const note=document.getElementById('exec-diff-note');
+  const same=(py2.error||py2.output)===(py3.error||py3.output);
+  if(same){badge.textContent='outputs match';badge.className='diff-badge diff-same';note.textContent='(may still diverge on edge-case inputs — check probe table)';}
+  else{badge.textContent='outputs differ';badge.className='diff-badge diff-diff';note.textContent='';}
+  document.getElementById('exec-diff-row').style.display='flex';
+}
+
+
+// ── Patch: clear exec panels on clearEditor ──────────────────────
+const _origClear = clearEditor;
+clearEditor = function(){
+  _origClear();
+  document.getElementById('exec-py2').textContent='click Run to execute';
+  document.getElementById('exec-py2').className='exec-result empty';
+  document.getElementById('exec-py3').textContent='click Run to execute';
+  document.getElementById('exec-py3').className='exec-result empty';
+  document.getElementById('exec-diff-row').style.display='none';
+};
+// ── Patch: loadSample also runs execution ────────────────────────
+const _origLoad = loadSample;
+loadSample = function(name){
+  _origLoad(name);
+  runExecution();
+};
+
 </script>
 </body>
 </html>
