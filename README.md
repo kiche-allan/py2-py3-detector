@@ -69,16 +69,6 @@ The detection engine uses multiple analysis strategies:
 - Octal and hexadecimal literals
 - Unicode strings
 - Import statements
-- And more...
-
-## Browser Compatibility
-
-Works with all modern browsers that support:
-
-- ES6+ JavaScript
-- CSS Grid
-- `textarea` elements
-- Local code execution
 
 ## Key Sample Codes
 
@@ -91,14 +81,3 @@ Works with all modern browsers that support:
 - **django migration**: Real-world Django code migration example
 - **all patterns**: Comprehensive feature showcase
 
-## Contributing
-
-Found a pattern we're missing? Feel free to open an issue or submit a pull request!
-
-## License
-
-Open source - feel free to use and modify as needed.
-
-## About
-
-This tool is designed to help developers migrate Python 2 codebases to Python 3 by identifying compatibility issues before they cause runtime errors.
