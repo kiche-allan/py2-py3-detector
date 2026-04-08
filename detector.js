@@ -162,7 +162,7 @@ const PreParsedRules = (() => {
 
   return { run };
 
-})();
+})();   // immediately invoked function expression (IIFE) to create a module-like scope
 
 /**
  * rules-semantic.js
