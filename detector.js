@@ -1,548 +1,3 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Python 2 vs 3 Detection Harness</title>
-<style>
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@400;500;600;700&display=swap');
-
-/* ── Design tokens ── */
-:root {
-  --bg:       #0f0f0e;
-  --surface:  #171715;
-  --surface2: #1e1e1b;
-  --border:   #2a2a27;
-  --border2:  #353532;
-  --text:     #e8e6df;
-  --muted:    #7a7a72;
-  --faint:    #3a3a36;
-
-  --py2:        #e8673a;
-  --py2-dim:    rgba(232,103,58,.15);
-  --py2-border: rgba(232,103,58,.35);
-  --py3:        #4a9eff;
-  --py3-dim:    rgba(74,158,255,.12);
-  --py3-border: rgba(74,158,255,.3);
-
-  --critical:     #e85555;
-  --critical-dim: rgba(232,85,85,.12);
-  --high:         #e89a3a;
-  --high-dim:     rgba(232,154,58,.12);
-  --medium:       #d4c459;
-  --medium-dim:   rgba(212,196,89,.1);
-  --hidden:       #a78bfa;
-  --hidden-dim:   rgba(167,139,250,.12);
-  --ok:           #4ade80;
-  --ok-dim:       rgba(74,222,128,.1);
-
-  --mono: 'JetBrains Mono', 'Fira Code', monospace;
-  --sans: 'Space Grotesk', system-ui, sans-serif;
-  --r: 8px;
-}
-
-/* ── Reset ── */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { background: var(--bg); }
-body {
-  background: var(--bg);
-  color: var(--text);
-  font-family: var(--sans);
-  font-size: 13px;
-  line-height: 1.6;
-  min-height: 100vh;
-}
-
-/* ── Shell layout ── */
-.shell {
-  display: grid;
-  grid-template-rows: auto 1fr;
-  min-height: 100vh;
-}
-
-/* ── Top bar ── */
-.topbar {
-  padding: 16px 24px;
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  background: var(--surface);
-}
-.topbar-title {
-  font-size: 15px;
-  font-weight: 700;
-  letter-spacing: -0.3px;
-  color: var(--text);
-}
-.topbar-title span { color: var(--py3); }
-.topbar-sub {
-  font-size: 12px;
-  color: var(--muted);
-  margin-left: auto;
-}
-
-/* ── Body grid ── */
-.body {
-  display: grid;
-  grid-template-columns: 1fr 420px;
-  height: calc(100vh - 53px);
-}
-@media (max-width: 900px) {
-  .body { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; }
-}
-
-/* ── Pills ── */
-.pill {
-  font-size: 10px;
-  font-weight: 600;
-  padding: 2px 8px;
-  border-radius: 20px;
-  letter-spacing: .04em;
-}
-.pill-py2 { background: var(--py2-dim); color: var(--py2); border: 1px solid var(--py2-border); }
-.pill-py3 { background: var(--py3-dim); color: var(--py3); border: 1px solid var(--py3-border); }
-
-/* ═══════════════════════════════════════════
-   LEFT PANE — Editor
-═══════════════════════════════════════════ */
-.editor-pane {
-  display: flex;
-  flex-direction: column;
-  border-right: 1px solid var(--border);
-}
-
-.pane-header {
-  padding: 10px 16px;
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  background: var(--surface);
-}
-.pane-label {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: .1em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-
-/* Sample selector bar */
-.samples {
-  padding: 10px 16px;
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-  align-items: center;
-}
-.sample-label {
-  font-size: 11px;
-  color: var(--muted);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: .06em;
-}
-.sample-chip {
-  font-size: 11px;
-  padding: 3px 10px;
-  border-radius: 20px;
-  border: 1px solid var(--border);
-  background: transparent;
-  color: var(--muted);
-  cursor: pointer;
-  font-family: var(--sans);
-  transition: all .15s;
-}
-.sample-chip:hover { border-color: var(--py3); color: var(--py3); }
-
-/* Code editor */
-.editor-wrap {
-  flex: 1;
-  position: relative;
-  overflow: hidden;
-}
-
-.line-numbers {
-  position: absolute;
-  left: 0; top: 0; bottom: 0;
-  width: 44px;
-  padding: 14px 0;
-  text-align: right;
-  font-family: var(--mono);
-  font-size: 12px;
-  color: var(--faint);
-  background: var(--surface);
-  border-right: 1px solid var(--border);
-  user-select: none;
-  overflow: hidden;
-  z-index: 1;
-}
-.line-numbers span { display: block; padding-right: 10px; line-height: 1.65; }
-.line-numbers span.flagged { color: var(--critical); }
-
-#code-editor {
-  position: absolute;
-  inset: 0;
-  left: 44px;
-  padding: 14px 16px;
-  background: transparent;
-  border: none;
-  outline: none;
-  font-family: var(--mono);
-  font-size: 12.5px;
-  line-height: 1.65;
-  color: var(--text);
-  resize: none;
-  width: calc(100% - 44px);
-  height: 100%;
-  tab-size: 4;
-  caret-color: var(--py3);
-  overflow-y: auto;
-}
-
-/* Editor toolbar */
-.editor-toolbar {
-  padding: 10px 16px;
-  border-top: 1px solid var(--border);
-  background: var(--surface);
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  flex-wrap: wrap;
-}
-.btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 7px 14px;
-  border-radius: var(--r);
-  border: 1px solid transparent;
-  cursor: pointer;
-  font-family: var(--sans);
-  font-size: 12px;
-  font-weight: 600;
-  transition: all .15s;
-}
-.btn-run {
-  background: var(--py3);
-  color: #000;
-  border-color: var(--py3);
-}
-.btn-run:hover   { opacity: .85; }
-.btn-run:active  { transform: scale(.97); }
-.btn-ghost {
-  background: transparent;
-  color: var(--muted);
-  border-color: var(--border);
-}
-.btn-ghost:hover { color: var(--text); border-color: var(--border2); }
-
-.run-status { font-size: 11px; color: var(--muted); margin-left: auto; }
-
-/* ═══════════════════════════════════════════
-   RIGHT PANE — Results
-═══════════════════════════════════════════ */
-.results-pane {
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  background: var(--bg);
-}
-
-/* Summary counts bar */
-.summary-bar {
-  padding: 10px 16px;
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  gap: 12px;
-  align-items: center;
-}
-.count-badge {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 12px;
-  font-weight: 600;
-}
-.dot { width: 7px; height: 7px; border-radius: 50%; }
-.dot-critical { background: var(--critical); }
-.dot-high     { background: var(--high); }
-.dot-medium   { background: var(--medium); }
-.dot-hidden   { background: var(--hidden); }
-
-/* Findings list */
-.findings-list {
-  flex: 1;
-  overflow-y: auto;
-  padding: 12px;
-}
-.findings-list::-webkit-scrollbar { width: 4px; }
-.findings-list::-webkit-scrollbar-track { background: transparent; }
-.findings-list::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
-
-/* Empty / placeholder state */
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  gap: 10px;
-  color: var(--muted);
-}
-.empty-icon { font-size: 32px; opacity: .4; }
-.empty-text { font-size: 13px; }
-
-/* OK banner */
-.ok-banner {
-  margin: 24px 16px;
-  padding: 16px;
-  border-radius: var(--r);
-  background: var(--ok-dim);
-  border: 1px solid rgba(74,222,128,.25);
-  text-align: center;
-  color: var(--ok);
-  font-size: 13px;
-  font-weight: 600;
-}
-
-/* ── Finding card ── */
-.finding {
-  border: 1px solid var(--border);
-  border-radius: var(--r);
-  margin-bottom: 8px;
-  overflow: hidden;
-  transition: border-color .15s;
-}
-.finding:hover { border-color: var(--border2); }
-
-.finding-head {
-  padding: 9px 12px;
-  display: flex;
-  gap: 8px;
-  align-items: flex-start;
-  cursor: pointer;
-  background: var(--surface);
-}
-.finding-head:hover { background: var(--surface2); }
-
-.sev-badge {
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: .06em;
-  text-transform: uppercase;
-  padding: 2px 6px;
-  border-radius: 4px;
-  white-space: nowrap;
-  margin-top: 1px;
-  flex-shrink: 0;
-}
-.sev-critical { background: var(--critical-dim); color: var(--critical); border: 1px solid rgba(232,85,85,.3); }
-.sev-high     { background: var(--high-dim);     color: var(--high);     border: 1px solid rgba(232,154,58,.3); }
-.sev-medium   { background: var(--medium-dim);   color: var(--medium);   border: 1px solid rgba(212,196,89,.25); }
-.sev-hidden   { background: var(--hidden-dim);   color: var(--hidden);   border: 1px solid rgba(167,139,250,.3); }
-
-.finding-msg  { font-size: 12.5px; font-weight: 600; flex: 1; line-height: 1.4; }
-.finding-line { font-size: 11px; color: var(--muted); white-space: nowrap; margin-top: 1px; font-family: var(--mono); }
-.chevron      { font-size: 10px; color: var(--muted); margin-top: 2px; transition: transform .2s; flex-shrink: 0; }
-.finding.open .chevron { transform: rotate(90deg); }
-
-.finding-body { display: none; padding: 12px; border-top: 1px solid var(--border); }
-.finding.open .finding-body { display: block; }
-
-/* Compare grid inside finding */
-.compare-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  margin-bottom: 10px;
-}
-.ver-box { border-radius: 6px; padding: 8px 10px; }
-.ver-box.py2 { background: var(--py2-dim); border: 1px solid var(--py2-border); }
-.ver-box.py3 { background: var(--py3-dim); border: 1px solid var(--py3-border); }
-.ver-label {
-  font-size: 9px; font-weight: 700; letter-spacing: .07em;
-  text-transform: uppercase; margin-bottom: 4px;
-}
-.ver-box.py2 .ver-label { color: var(--py2); }
-.ver-box.py3 .ver-label { color: var(--py3); }
-.ver-val {
-  font-family: var(--mono);
-  font-size: 11.5px;
-  line-height: 1.6;
-  word-break: break-all;
-  white-space: pre-wrap;
-}
-
-.detail-text { font-size: 12px; color: var(--muted); line-height: 1.6; margin-bottom: 8px; }
-
-.snippet-box {
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 8px 10px;
-  font-family: var(--mono);
-  font-size: 11.5px;
-  color: var(--text);
-  overflow-x: auto;
-  white-space: pre;
-}
-.snip-label {
-  font-size: 10px; color: var(--muted); margin-bottom: 4px;
-  font-weight: 600; letter-spacing: .05em; text-transform: uppercase;
-}
-
-/* ── Dynamic probe panel ── */
-.probe-section {
-  border-top: 1px solid var(--border);
-  padding: 12px;
-  background: var(--surface);
-}
-.probe-title {
-  font-size: 11px; font-weight: 600; text-transform: uppercase;
-  letter-spacing: .08em; color: var(--muted); margin-bottom: 8px;
-}
-.probe-row {
-  display: grid;
-  grid-template-columns: auto 1fr 1fr auto;
-  gap: 6px;
-  align-items: center;
-  padding: 4px 0;
-  border-bottom: 1px solid var(--border);
-  font-family: var(--mono);
-  font-size: 11.5px;
-}
-.probe-row:last-child { border-bottom: none; }
-.probe-expr { color: var(--muted); }
-.probe-py2  { color: var(--py2); }
-.probe-py3  { color: var(--py3); }
-.probe-diff { font-size: 10px; font-weight: 700; }
-.probe-diff.bug { color: var(--critical); }
-.probe-diff.ok  { color: var(--ok); }
-
-
-/* ── Execution output panel ── */
-.exec-pane{border-top:1px solid var(--border);background:var(--surface);flex-shrink:0;}
-.exec-header{padding:9px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
-.exec-outputs{display:grid;grid-template-columns:1fr 1fr;}
-.exec-out{display:flex;flex-direction:column;overflow:hidden;}
-.exec-out:first-child{border-right:1px solid var(--border);}
-.exec-out-hdr{padding:6px 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);background:var(--surface2);}
-.exec-out-label{font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;}
-.exec-out-label.lpy2{color:var(--py2);}
-.exec-out-label.lpy3{color:var(--py3);}
-.exec-out-tag{font-size:9px;padding:1px 6px;border-radius:3px;font-weight:600;letter-spacing:.04em;}
-.tag-sim{background:var(--py2-dim);color:var(--py2);border:1px solid var(--py2-border);}
-.tag-live{background:var(--py3-dim);color:var(--py3);border:1px solid var(--py3-border);}
-.exec-result{font-family:var(--mono);font-size:12px;line-height:1.65;padding:10px 12px;min-height:80px;max-height:160px;overflow-y:auto;white-space:pre-wrap;word-break:break-all;color:var(--text);}
-.exec-result.err{color:var(--critical);}
-.exec-result.empty{color:var(--muted);font-style:italic;}
-.exec-result::-webkit-scrollbar{width:3px;}
-.exec-result::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
-.exec-diff-row{padding:6px 12px;font-size:11px;border-top:1px solid var(--border);display:none;align-items:center;gap:7px;}
-.diff-badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;letter-spacing:.04em;}
-.diff-same{background:var(--ok-dim);color:var(--ok);}
-.diff-diff{background:var(--critical-dim);color:var(--critical);}
-</style>
-</head>
-<body>
-<div class="shell">
-
-  <div class="topbar">
-    <div class="topbar-title">Python <span>2&#8596;3</span> Detection Harness</div>
-    <div class="pill pill-py2">Python 2 simulated</div>
-    <div class="pill pill-py3">Python 3 live</div>
-    <div class="topbar-sub">Layer 1: pre-parse &middot; Layer 2: semantic &middot; Layer 3: probes</div>
-  </div>
-
-  <div class="body">
-
-    <div class="editor-pane">
-      <div class="samples">
-        <span class="sample-label">Samples</span>
-        <button class="sample-chip" onclick="loadSample('division')">division</button>
-        <button class="sample-chip" onclick="loadSample('rounding')">rounding</button>
-        <button class="sample-chip" onclick="loadSample('iterator')">iterators</button>
-        <button class="sample-chip" onclick="loadSample('dict')">dict.keys</button>
-        <button class="sample-chip" onclick="loadSample('bytes')">bytes/str</button>
-        <button class="sample-chip" onclick="loadSample('hidden')">hidden bug</button>
-        <button class="sample-chip" onclick="loadSample('django')">django</button>
-        <button class="sample-chip" onclick="loadSample('ansible')">ansible</button>
-        <button class="sample-chip" onclick="loadSample('all')">all patterns</button>
-      </div>
-      <div class="pane-header">
-        <span class="pane-label">Source code</span>
-        <span style="font-size:11px;color:var(--muted);margin-left:auto">Ctrl+Enter to analyse</span>
-      </div>
-      <div class="editor-wrap">
-        <div class="line-numbers" id="line-numbers"></div>
-        <textarea id="code-editor" spellcheck="false" autocomplete="off"
-          placeholder="# Paste Python code here and click Analyse"></textarea>
-      </div>
-      <div class="editor-toolbar">
-        <button class="btn btn-run" onclick="runAnalysis();runExecution()">&#9654; Analyse</button>
-        <button class="btn btn-ghost" onclick="clearEditor()">Clear</button>
-        <span class="run-status" id="run-status"></span>
-      </div>
-    </div>
-
-    <div class="results-pane">
-      <div class="summary-bar" id="summary-bar" style="display:none">
-        <span id="cnt-critical" class="count-badge"><span class="dot dot-critical"></span><span>0</span> critical</span>
-        <span id="cnt-high"     class="count-badge"><span class="dot dot-high"></span><span>0</span> high</span>
-        <span id="cnt-medium"   class="count-badge"><span class="dot dot-medium"></span><span>0</span> medium</span>
-        <span id="cnt-hidden"   class="count-badge"><span class="dot dot-hidden"></span><span>0</span> hidden</span>
-      </div>
-      <div class="findings-list" id="findings-list">
-        <div class="empty-state">
-          <div class="empty-icon">&#9889;</div>
-          <div class="empty-text">Write or paste code, then click Analyse</div>
-        </div>
-      </div>
-      <div class="probe-section" id="probe-section" style="display:none">
-        <div class="probe-title">Dynamic probes &mdash; actual py2 vs py3 values</div>
-        <div id="probe-rows"></div>
-      </div>
-
-      <!-- Side-by-side execution output panel -->
-      <div class="exec-pane">
-        <div class="exec-header">
-          <span class="pane-label">Output</span>
-          <span style="font-size:11px;color:var(--muted)">py2 simulated &middot; py3 live</span>
-        </div>
-        <div class="exec-outputs">
-          <div class="exec-out">
-            <div class="exec-out-hdr">
-              <span class="exec-out-label lpy2">Python 2</span>
-              <span class="exec-out-tag tag-sim">simulated</span>
-            </div>
-            <div class="exec-result empty" id="exec-py2">click Run to execute</div>
-          </div>
-          <div class="exec-out">
-            <div class="exec-out-hdr">
-              <span class="exec-out-label lpy3">Python 3</span>
-              <span class="exec-out-tag tag-live">live</span>
-            </div>
-            <div class="exec-result empty" id="exec-py3">click Run to execute</div>
-          </div>
-        </div>
-        <div class="exec-diff-row" id="exec-diff-row">
-          <span style="color:var(--muted)">Result:</span>
-          <span class="diff-badge" id="exec-diff"></span>
-          <span style="color:var(--muted);font-size:11px" id="exec-diff-note"></span>
-        </div>
-      </div>
-
-    </div>
-
-  </div>
-</div>
-
-<script>
 /**
  * rules-preparsed.js
  * Layer 1 — tokeniser-level rules.
@@ -1170,195 +625,184 @@ const ProbeEngine = (() => {
 
 })();
 
-/**
- * samples.js
- * Code samples loaded into the editor via the sample-chip buttons.
- * Each key matches the `data-sample` attribute on the button.
- */
-
 "use strict";
 
 const SAMPLES = {
 
-  division: `# Integer division — hidden when denominator is even in tests
-def compute_stats(scores, n_students):
-    average    = sum(scores) / n_students        # BUG: floors in py2
-    top_half   = scores[:len(scores) / 2]        # BUG: slice needs int
-    percentile = (len(scores) / n_students) * 100
+  division: `# Integer division
+# py2: int/int floors  |  py3: int/int returns float
+print(7 / 2)
+print(3 / 10)
+print(10 / 2)
 
-    # Test with n_students=10: 10/10=1 (same in both)
-    # Test with n_students=3:  py2=0, py3=0.333 (diverges!)
-    return average, top_half, percentile`,
+# Real-world pattern: percentage
+hits  = 3
+total = 10
+print((hits / total) * 100)
 
-  rounding: `# Rounding — banker's rounding divergence
-def compute_invoice(line_items):
-    # Each item rounded before summing
-    rounded = [round(item * 1.0) for item in line_items]
-    total   = sum(round(v) for v in rounded)
-    tax     = round(total * 0.175, 2)
-    return total, tax
+# Hidden case: even denominators look the same in both
+print(10 / 5)
+print(9 / 3)`,
 
-# compute_invoice([0.5, 1.5, 2.5, 3.5, 4.5])
-# py2 total: 15   py3 total: 12   — difference of 3!`,
+  rounding: `# Banker's rounding
+# py2: round(0.5)=1  |  py3: round(0.5)=0
+print(round(0.5))
+print(round(1.5))
+print(round(2.5))
+print(round(3.5))
+print(round(4.5))
 
-  iterator: `# Iterator bugs — map/filter/zip are lazy in py3
-def process_users(users, active_ids):
-    # Bug 1: map() boolean guard — always True in py3 even for []
-    names = map(lambda u: u['name'], users)
-    if names:
-        send_newsletter(names)
+# Accumulation: where financial code breaks
+vals = [0.5, 1.5, 2.5, 3.5, 4.5]
+print(sum(round(v) for v in vals))
 
-    # Bug 2: zip() double-consumption
-    pairs    = zip(active_ids, users)
-    user_map = dict(pairs)
-    audit_log(list(pairs))   # py3: logs nothing — iterator exhausted
+# Invoice lines
+prices = [1.5, 2.5, 3.5, 4.5, 5.5]
+print(sum(round(p) for p in prices))`,
 
-    # Bug 3: filter() length check
-    active = filter(lambda u: u['active'], users)
-    print("Active count:", len(active))   # py3: TypeError`,
+  iterator: `# map() / filter() / zip() return iterators in py3
 
-  dict: `# dict.keys() / .values() treated as a list
+# Bug 1: map() always truthy even when input is empty
+empty = []
+print(bool(map(str, empty)))
+
+data = [1, 2, 3]
+print(bool(map(str, data)))
+
+# Bug 2: zip() exhausted after first consumption
+keys = ["a", "b", "c"]
+vals = [1, 2, 3]
+z = zip(keys, vals)
+first_pass  = dict(z)
+second_pass = list(z)
+print(first_pass)
+print(second_pass)
+
+# Bug 3: filter() result as list
+nums     = [1, -2, 3, -4, 5]
+positive = filter(lambda x: x > 0, nums)
+print(list(positive))`,
+
+  dict: `# dict.keys() is a view in py3, not a list
+
 config = {"timeout": 30, "retry": 3, "host": "localhost"}
 
-# Bug 1: direct indexing
-first_setting = config.keys()[0]   # py3: TypeError
-
-# Bug 2: sorting in place
-sorted_keys = config.keys()
-sorted_keys.sort()                 # py3: AttributeError
-
-# Bug 3: mutating dict while iterating its keys
+# Iteration works in both
 for k in config.keys():
-    if config[k] is None:
-        config.pop(k)              # py3: RuntimeError`,
+    print(k)
 
-  bytes: `# bytes/str comparison — auth silently fails in py3
-def verify_token(request_token, stored_secret):
-    # request_token from network → bytes
-    # stored_secret from DB      → str
-    if request_token == stored_secret:   # py2: True, py3: ALWAYS False
-        return True
-    return False
+# Membership works in both
+print("timeout" in config.keys())
 
-def check_signature(sig, expected):
-    # sig      = b"abc123"
-    # expected = "abc123"
-    return sig == expected    # py2: True  py3: False`,
+# py3 bonus: set ops on views
+config2 = {"timeout": 60, "debug": True}
+common = config.keys() & config2.keys()
+print(sorted(common))`,
 
-  hidden: `# Hidden bug — same test output, different production behaviour
+  bytes: `# bytes vs str: different types in py3
 
-def calculate_progress(completed, total):
-    # completed=5, total=10 → both give 0  (test passes silently)
-    # completed=3, total=7  → py2=0, py3=42.86 (only caught in prod)
-    pct = (completed / total) * 100
-    return pct
+b_val = b"SECRET"
+s_val = "SECRET"
 
-def send_if_any(items):
-    # Non-empty list → both branches taken → test passes
-    # Empty list     → py2 skips, py3 runs (iterator always truthy)
-    filtered = map(lambda x: x > 0, items)
-    if filtered:
-        dispatch(filtered)
+# True in py2, False in py3
+print(b_val == s_val)
 
-def total_commission(deals):
-    # Individual round() values often match
-    # Sums diverge by up to N/4 across many .5 values
-    return sum(round(d * 0.5) for d in deals)`,
+# char in py2, integer in py3
+data = b"hello"
+print(data[0])
 
-  django: `# Django migration file generated by Python 2
-# Running python3 manage.py migrate on this crashes:
-#   FieldDoesNotExist: Model has no field named b'title'
+# type equality
+print(type(b_val) == type(s_val))`,
 
-from django.db import migrations, models
+  hidden: `# Hidden bugs: same output on easy inputs, diverge on real data
 
-class Migration(migrations.Migration):
-    operations = [
-        migrations.CreateModel(
-            name=b'Article',                     # BUG: bytes, not str
-            fields=[
-                (b'id',    models.AutoField()),  # BUG: b'id' != 'id'
-                (b'title', models.CharField()),  # BUG
-                (b'slug',  models.SlugField()),  # BUG
-            ],
-            options={
-                'verbose_name': b'Article',      # BUG
-            },
-        ),
-    ]`,
+# Division: even denominator hides the bug
+print(10 / 2)
+print(6  / 3)
 
-  ansible: `# Ansible patterns that broke on Python 3
+# Division: odd denominator reveals it
+print(3 / 7)
+print(1 / 3)
 
-# Bug 1: hash filter (Ansible #21452)
-# Slurped file content is str in py3 — hashlib needs bytes
-def hash_file_content(content):
-    import hashlib
-    # py2: content is bytes (str == bytes in py2) — works
-    # py3: content is str (unicode) — TypeError
-    return hashlib.sha1(content).hexdigest()
+# Rounding: integers — both the same
+print(round(1.0))
+print(round(2.0))
 
-# Bug 2: dict mutation during iteration (amazon.aws #709)
-def find_instances(filters):
-    for key in filters.keys():
-        if filters[key] is None:
-            filters.pop(key)    # py3: RuntimeError
+# Rounding: .5 boundary — split here
+print(round(0.5))
+print(round(2.5))
 
-# Bug 3: integer sequence from with_sequence returns unicode
-def compute_sequence(item):
-    # item arrives as u'1', u'2' — not int
-    return 10 + item   # py2: TypeError  py3: TypeError`,
+# Sum of .5 values
+vals = [0.5, 1.5, 2.5, 3.5, 4.5]
+print(sum(round(v) for v in vals))`,
 
-  all: `# All migration patterns combined
-import os
+  django: `# Django migration bytes/str bug
+# py2 generates b"Article", py3 needs "Article"
 
-# 1. Integer division
-average  = len(results) / total_count
-page_num = offset / page_size
+name_bytes  = b"Article"
+name_str    = "Article"
 
-# 2. Banker's rounding divergence
-totals = [round(x * 0.5) for x in invoice_lines]
-total  = sum(round(v) for v in totals)
+print(name_bytes == name_str)
+print(type(name_bytes))
+print(type(name_str))
 
-# 3. map/filter/zip as lazy iterators
-filtered = map(str, items)
-if filtered:
-    process(filtered)
-active = filter(lambda x: x > 0, data)
-pairs  = zip(keys, values)
-result = dict(pairs)
-audit  = list(pairs)     # silent data loss in py3
+# Indexing bytes gives int in py3
+field_name = b"title"
+print(field_name[0])`,
 
-# 4. dict.keys() indexed/sorted
-first = config.keys()[0]
-config.keys().sort()
+  ansible: `# Ansible bugs
 
-# 5. bytes vs str comparison
-if token == "secret_key":
-    grant_access()
+# Safe dict iteration with list() copy
+filters = {"region": "us-east", "state": None, "tag": None}
+clean = {}
+for k in list(filters.keys()):
+    if filters[k] is not None:
+        clean[k] = filters[k]
+print(clean)
 
-# 6. input() eval
-age = input("Enter age: ")
+# bytes/str comparison
+content_str   = "openssl config data"
+content_bytes = b"openssl config data"
+print(content_str  == content_bytes)
+print(content_bytes[0])`,
 
-# 7. open without encoding
-f = open("data.csv")
+  sorting: `# Cross-type sorting
 
-# 8. sorted on mixed types
-data = sorted([3, None, "a", 1.5])
+# Same types: works in both
+nums  = [3, 1, 4, 1, 5, 9, 2, 6]
+words = ["banana", "apple", "cherry"]
+print(sorted(nums))
+print(sorted(words))
 
-# 9. dict mutation while iterating
-for k in d.keys():
-    if not d[k]: d.pop(k)
+# Mixed numbers: works in both
+mixed_nums = [3, 1.5, 2, 0.5]
+print(sorted(mixed_nums))`,
 
-# 10. Python 2-only syntax
-print "status:", status
+  all: `# All key divergences
 
-try:
-    risky()
-except ValueError, e:
-    handle(e)
+print("--- division ---")
+print(7 / 2)
+print(3 / 10)
 
-x = unicode("hello")
-for i in xrange(100):
-    pass`,
+print("--- rounding ---")
+print([round(v) for v in [0.5, 1.5, 2.5, 3.5, 4.5]])
+print(sum(round(v) for v in [0.5, 1.5, 2.5, 3.5, 4.5]))
+
+print("--- map bool ---")
+print(bool(map(str, [])))
+print(bool(map(str, [1, 2, 3])))
+
+print("--- zip exhaust ---")
+z = zip([1, 2, 3], [4, 5, 6])
+print(dict(z))
+print(list(z))
+
+print("--- bytes vs str ---")
+print(b"hello" == "hello")
+print(b"hello"[0])
+
+print("--- sorted ---")
+print(sorted([3, 1, 4, 1, 5]))`,
 
 };
 
@@ -1605,7 +1049,6 @@ updateLineNumbers();
 // ═══════════════════════════════════════════════════════════════════
 const ExecutionEngine = (() => {
 
-  // py2 semantic simulators
   function py2div(a,b){ return (Number.isInteger(a)&&Number.isInteger(b))?Math.floor(a/b):a/b; }
   function py2round(x,n=0){ const f=Math.pow(10,n); return Math.floor(x*f+0.5)/f; }
   function py2range(a,b,c){
@@ -1616,7 +1059,7 @@ const ExecutionEngine = (() => {
     const r=[];for(let i=start;step>0?i<stop:i>stop;i+=step)r.push(i);return r;
   }
 
-  // py3 iterator wrapper — single-pass, always truthy
+  // py3 iterator: single-pass, always truthy
   class PyIter {
     constructor(arr,name){this._arr=[...arr];this._done=false;this._name=name||'iterator';}
     [Symbol.iterator](){if(this._done)return [][Symbol.iterator]();this._done=true;return this._arr[Symbol.iterator]();}
@@ -1670,6 +1113,8 @@ const ExecutionEngine = (() => {
     js=js.replace(/\bfloat\s*\(/g,'parseFloat(');
     js=js.replace(/\bsum\s*\(/g,'__sum__(');
     js=js.replace(/\bbool\s*\(/g,'Boolean(');
+    js=js.replace(/\btype\s*\(/g,'__type__(');
+    js=js.replace(/\babs\s*\(/g,'Math.abs(');
     if(mode==='py2'){
       js=js.replace(/([a-zA-Z0-9_)\]]+)\s*\/\s*([a-zA-Z0-9_(]+)(?!\/)/g,'__div__($1,$2)');
       js=js.replace(/\bround\s*\(/g,'__round__(');
@@ -1693,7 +1138,26 @@ const ExecutionEngine = (() => {
     const __list=x=>x instanceof PyIter?Array.from(x):Array.isArray(x)?[...x]:Array.from(x);
     const __dict=x=>{if(x instanceof PyIter)return Object.fromEntries(Array.from(x));if(Array.isArray(x))return Object.fromEntries(x);return x;};
     const __sum=x=>Array.from(x).reduce((a,b)=>a+b,0);
-    const common={__out,__len,__list,__dict,__sum,__range:py2range,String,parseInt,parseFloat,Boolean,abs:Math.abs,max:Math.max,min:Math.min};
+    const __type=x=>{
+      if(x instanceof Uint8Array||ArrayBuffer.isView(x))return "<class 'bytes'>";
+      if(typeof x==='string')return "<class 'str'>";
+      if(typeof x==='number')return Number.isInteger(x)?"<class 'int'>":"<class 'float'>";
+      if(typeof x==='boolean')return "<class 'bool'>";
+      if(Array.isArray(x))return "<class 'list'>";
+      if(x instanceof PyIter)return `<class '${x._name}'>`;
+      return "<class 'object'>";
+    };
+    // byte string simulation
+    const __bytes=(s)=>{
+      const obj={_bytes:true,_str:s,[Symbol.toPrimitive](){return this._str;}};
+      obj.toString=()=>`b'${s}'`;
+      obj.__eq__=(other)=>false; // bytes != str always in py3
+      return obj;
+    };
+    const common={__out,__len,__list,__dict,__sum,__type,__range:py2range,
+      String,parseInt,parseFloat,Boolean,abs:Math.abs,max:Math.max,min:Math.min,
+      print:__out,
+    };
     if(mode==='py2') return {...common,
       __div__:py2div,__round__:py2round,
       __map__:(fn,...a)=>Array.from(a[0]).map(fn),
@@ -1707,11 +1171,45 @@ const ExecutionEngine = (() => {
     };
   }
 
+  // Handle byte string literals b"..." before JS translation
+  function preprocessBytes(code){
+    // Replace b"..." and b'...' with __bstr__("...")
+    return code
+      .replace(/b"([^"]*)"/g, '__bstr__("$1")')
+      .replace(/b'([^']*)'/g,  "__bstr__('$1')");
+  }
+
   function execCode(source,mode){
     const lines=[],result={output:'',error:null};
     try{
+      let code = preprocessBytes(source);
       const env=makeEnv(mode,lines);
-      new Function(...Object.keys(env),toJS(source,mode))(...Object.values(env));
+
+      // Add byte string handler to env
+      if(mode==='py2'){
+        // py2: b"x" == "x" → True (same type)
+        env.__bstr__ = s => s;  // just a plain string in py2
+      } else {
+        // py3: b"x" is a bytes object, != str
+        env.__bstr__ = s => {
+          const proxy = new Proxy({_s:s,_bytes:true},{
+            get(t,k){
+              if(k===Symbol.toPrimitive) return ()=>t._s;
+              if(k==='toString') return ()=>`b'${t._s}'`;
+              if(k==='valueOf') return ()=>t;
+              if(k==='__eq__') return other=>false;
+              if(typeof k==='number'||k==='0') return t._s.charCodeAt(parseInt(k));
+              // index access
+              if(!isNaN(k)) return t._s.charCodeAt(parseInt(k));
+              return t[k];
+            },
+            // == comparison: bytes != str always
+          });
+          return proxy;
+        };
+      }
+
+      new Function(...Object.keys(env),toJS(code,mode))(...Object.values(env));
       result.output=lines.join('\n')||'(no output)';
     }catch(e){result.error=`${e.constructor?.name||'Error'}: ${e.message}`;}
     return result;
@@ -1720,7 +1218,6 @@ const ExecutionEngine = (() => {
   return {run:src=>({py2:execCode(src,'py2'),py3:execCode(src,'py3')})};
 })();
 
-// ── Execution UI wiring ──────────────────────────────────────────────
 function runExecution(){
   const code=document.getElementById('code-editor').value.trim();
   if(!code)return;
@@ -1734,29 +1231,23 @@ function runExecution(){
   const badge=document.getElementById('exec-diff');
   const note=document.getElementById('exec-diff-note');
   const same=(py2.error||py2.output)===(py3.error||py3.output);
-  if(same){badge.textContent='outputs match';badge.className='diff-badge diff-same';note.textContent='(may still diverge on edge-case inputs — check probe table)';}
+  if(same){badge.textContent='outputs match';badge.className='diff-badge diff-same';note.textContent='(check probe table — may diverge on edge-case inputs)';}
   else{badge.textContent='outputs differ';badge.className='diff-badge diff-diff';note.textContent='';}
   document.getElementById('exec-diff-row').style.display='flex';
 }
 
 
-// ── Patch: clear exec panels on clearEditor ──────────────────────
-const _origClear = clearEditor;
+const _origClear2 = clearEditor;
 clearEditor = function(){
-  _origClear();
-  document.getElementById('exec-py2').textContent='click Run to execute';
+  _origClear2();
+  document.getElementById('exec-py2').textContent='click Analyse to run';
   document.getElementById('exec-py2').className='exec-result empty';
-  document.getElementById('exec-py3').textContent='click Run to execute';
+  document.getElementById('exec-py3').textContent='click Analyse to run';
   document.getElementById('exec-py3').className='exec-result empty';
   document.getElementById('exec-diff-row').style.display='none';
 };
-// ── Patch: loadSample also runs execution ────────────────────────
-const _origLoad = loadSample;
+const _origLoad2 = loadSample;
 loadSample = function(name){
-  _origLoad(name);
+  _origLoad2(name);
   runExecution();
 };
-
-</script>
-</body>
-</html>
