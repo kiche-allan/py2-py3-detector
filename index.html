@@ -1,103 +1,80 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Python 2 vs 3 Detection Harness</title>
-<link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Python 2 vs 3 Detection Harness</title>
+    <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 <div class="shell">
-
-  <div class="topbar">
-    <div class="topbar-title">Python <span>2&#8596;3</span> Detection App</div>
-    <div class="pill pill-py2">Python 2 simulated</div>
-    <div class="pill pill-py3">Python 3 Live</div>
-    <div class="topbar-sub">Layer 1: Pre-Parse &middot; Layer 2: Semantic &middot; Layer 3: Probes</div>
-  </div>
-
-  <div class="body">
-
-    <div class="editor-pane">
-      <div class="samples">
-        <span class="sample-label">Samples</span>
-        <button class="sample-chip" onclick="loadSample('division')">division</button>
-        <button class="sample-chip" onclick="loadSample('rounding')">rounding</button>
-        <button class="sample-chip" onclick="loadSample('iterator')">iterators</button>
-        <button class="sample-chip" onclick="loadSample('dict')">dict.keys</button>
-        <button class="sample-chip" onclick="loadSample('bytes')">bytes/str</button>
-        <button class="sample-chip" onclick="loadSample('hidden')">hidden bug</button>
-        <button class="sample-chip" onclick="loadSample('sorting')">sorting</button>
-        <button class="sample-chip" onclick="loadSample('django')">django</button>
-        <button class="sample-chip" onclick="loadSample('ansible')">ansible</button>
-        <button class="sample-chip" onclick="loadSample('all')">all patterns</button>
-      </div>
-      <div class="pane-header">
-        <span class="pane-label">Source code</span>
-        <span style="font-size:11px;color:var(--muted);margin-left:auto">Ctrl+Enter To Analyse</span>
-      </div>
-      <div class="editor-wrap">
-        <div class="line-numbers" id="line-numbers"></div>
-        <textarea id="code-editor" spellcheck="false" autocomplete="off"
-          placeholder="# Paste Python code here and click Analyse"></textarea>
-      </div>
-      <div class="editor-toolbar">
-        <button class="btn btn-run" onclick="runAnalysis();runExecution()">&#9654; Analyse</button>
-        <button class="btn btn-ghost" onclick="clearEditor()">Clear</button>
-        <span class="run-status" id="run-status"></span>
-      </div>
+    <div class="topbar">
+        <div class="topbar-title">Python <span>2↔3</span> Detection App</div>
+        <div class="pill pill-py2">Python 2 simulated</div>
+        <div class="pill pill-py3">Python 3 Live</div>
+        <div class="topbar-sub">ES6 Modular Architecture</div>
     </div>
 
-    <div class="results-pane">
-      <div class="summary-bar" id="summary-bar" style="display:none">
-        <span id="cnt-critical" class="count-badge"><span class="dot dot-critical"></span><span>0</span> critical</span>
-        <span id="cnt-high"     class="count-badge"><span class="dot dot-high"></span><span>0</span> high</span>
-        <span id="cnt-medium"   class="count-badge"><span class="dot dot-medium"></span><span>0</span> medium</span>
-        <span id="cnt-hidden"   class="count-badge"><span class="dot dot-hidden"></span><span>0</span> hidden</span>
-      </div>
-      <div class="findings-list" id="findings-list">
-        <div class="empty-state">
-          <div class="empty-icon">&#9889;</div>
-          <div class="empty-text">Write or paste code, then click Analyse</div>
-        </div>
-      </div>
-      <div class="probe-section" id="probe-section" style="display:none">
-        <div class="probe-title">Dynamic probes &mdash; actual py2 vs py3 values</div>
-        <div id="probe-rows"></div>
-      </div>
-
-      <div class="exec-pane">
-        <div class="exec-header">
-          <span class="pane-label">Output</span>
-          <span style="font-size:11px;color:var(--muted)">py2 simulated &middot; py3 live</span>
-        </div>
-        <div class="exec-outputs">
-          <div class="exec-out">
-            <div class="exec-out-hdr">
-              <span class="exec-out-label lpy2">Python 2</span>
-              <span class="exec-out-tag tag-sim">simulated</span>
+    <div class="body">
+        <div class="editor-pane">
+            <div class="samples" id="sample-container">
+                <span class="sample-label">Samples</span>
+                </div>
+            <div class="pane-header">
+                <span class="pane-label">Source code</span>
+                <span style="font-size:11px;color:var(--muted);margin-left:auto">Ctrl+Enter To Analyse</span>
             </div>
-            <div class="exec-result empty" id="exec-py2">click Analyse to run</div>
-          </div>
-          <div class="exec-out">
-            <div class="exec-out-hdr">
-              <span class="exec-out-label lpy3">Python 3</span>
-              <span class="exec-out-tag tag-live">live</span>
+            <div class="editor-wrap">
+                <div class="line-numbers" id="line-numbers"></div>
+                <textarea id="code-editor" spellcheck="false" autocomplete="off"
+                    placeholder="# Paste Python code here and click Analyse"></textarea>
             </div>
-            <div class="exec-result empty" id="exec-py3">click Analyse to run</div>
-          </div>
+            <div class="editor-toolbar">
+                <button class="btn btn-run" id="btn-analyse">▶ Analyse</button>
+                <button class="btn btn-ghost" id="btn-clear">Clear</button>
+                <span class="run-status" id="run-status"></span>
+            </div>
         </div>
-        <div class="exec-diff-row" id="exec-diff-row">
-          <span style="color:var(--muted)">Result:</span>
-          <span class="diff-badge" id="exec-diff"></span>
-          <span style="color:var(--muted);font-size:11px" id="exec-diff-note"></span>
-        </div>
-      </div>
 
+        <div class="results-pane">
+            <div class="summary-bar" id="summary-bar" style="display:none">
+                <span id="cnt-critical" class="count-badge"><span class="dot dot-critical"></span><span>0</span> critical</span>
+                <span id="cnt-high" class="count-badge"><span class="dot dot-high"></span><span>0</span> high</span>
+                <span id="cnt-medium" class="count-badge"><span class="dot dot-medium"></span><span>0</span> medium</span>
+            </div>
+            <div class="findings-list" id="findings-list">
+                <div class="empty-state">
+                    <div class="empty-icon">⚡</div>
+                    <div class="empty-text">Write or paste code, then click Analyse</div>
+                </div>
+            </div>
+            <div class="probe-section" id="probe-section" style="display:none">
+                <div class="probe-title">Dynamic probes — actual py2 vs py3 values</div>
+                <div id="probe-rows"></div>
+            </div>
+
+            <div class="exec-pane">
+                <div class="exec-header">
+                    <span class="pane-label">Output Comparison</span>
+                </div>
+                <div class="exec-outputs">
+                    <div class="exec-out">
+                        <div class="exec-out-hdr">
+                            <span class="exec-out-label lpy2">Python 2</span>
+                        </div>
+                        <div class="exec-result empty" id="exec-py2">Ready...</div>
+                    </div>
+                    <div class="exec-out">
+                        <div class="exec-out-hdr">
+                            <span class="exec-out-label lpy3">Python 3</span>
+                        </div>
+                        <div class="exec-result empty" id="exec-py3">Ready...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-
-  </div>
 </div>
-<script src="detector.js"></script>
+<script type="module" src="js/main.js"></script>
 </body>
 </html>
