@@ -1,10 +1,9 @@
 /**
- * ui.js - DOM Controller
+ * ui.js - DOM Manipulation
  */
-
 export const SAMPLES = {
     division: `print(7 / 2)\nprint(10 / 5)`,
-    iterator: `z = zip([1,2], [3,4])\nprint(list(z))\nprint(list(z)) # Empty in Py3!`
+    print: `print "Hello World"\n# Try changing this to print("Hello")`
 };
 
 export const UI = {
@@ -21,11 +20,15 @@ export const UI = {
 
     renderFindings(findings) {
         const list = document.getElementById('findings-list');
+        const summary = document.getElementById('summary-bar');
+        
         if (!findings.length) {
             list.innerHTML = `<div class="ok-banner">✓ No migration issues detected</div>`;
+            summary.style.display = 'none';
             return;
         }
 
+        summary.style.display = 'flex';
         list.innerHTML = findings.map((f, i) => `
             <div class="finding" id="f-${i}">
                 <div class="finding-head" onclick="this.parentElement.classList.toggle('open')">
@@ -39,5 +42,36 @@ export const UI = {
                 </div>
             </div>
         `).join('');
+    },
+
+    renderProbes(probes) {
+        const section = document.getElementById('probe-section');
+        const container = document.getElementById('probe-rows');
+        if (!probes.length) {
+            section.style.display = 'none';
+            return;
+        }
+        section.style.display = 'block';
+        container.innerHTML = probes.map(p => `
+            <div class="probe-row">
+                <span class="probe-expr">${p.expr}</span>
+                <span class="probe-py2">${p.py2}</span>
+                <span class="probe-py3">${p.py3}</span>
+                <span class="probe-diff ${p.diverges ? 'bug' : 'ok'}">${p.diverges ? '⚠' : '✓'}</span>
+            </div>
+        `).join('');
+    },
+
+    renderExecution(results) {
+        const py2el = document.getElementById('exec-py2');
+        const py3el = document.getElementById('exec-py3');
+
+        const updateEl = (el, res) => {
+            el.textContent = res.error || res.output || '(no output)';
+            el.className = 'exec-result' + (res.error ? ' err' : '');
+        };
+
+        updateEl(py2el, results.py2);
+        updateEl(py3el, results.py3);
     }
 };

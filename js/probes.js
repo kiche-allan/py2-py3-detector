@@ -1,7 +1,6 @@
 /**
- * probes.js - Dynamic Probe Engine
+ * probes.js - Comparison Probe Engine
  */
-
 export const ProbeEngine = {
     run(findings) {
         const needed = new Set(findings.filter(f => f.probe).map(f => f.probe.type));
