@@ -1,81 +1,32 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Python 2 vs 3 Detection Harness</title>
-    <link rel="stylesheet" href="css/style.css">
+<meta charset="UTF-8">
+<title>py2 vs py3 detector </title>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div class="shell">
-    <div class="topbar">
-        <div class="topbar-title">Python <span>2↔3</span> Detection App</div>
-        <div class="pill pill-py2">Python 2 simulated</div>
-        <div class="pill pill-py3">Python 3 Live</div>
-        <div class="topbar-sub">ES6 Modular Architecture</div>
-    </div>
 
-    <div class="body">
-        <div class="editor-pane">
-            <div class="samples" id="sample-container">
-                <span class="sample-label">Samples</span>
-                </div>
-            <div class="pane-header">
-                <span class="pane-label">Source code</span>
-                <span style="font-size:11px;color:var(--muted);margin-left:auto">Ctrl+Enter To Analyse</span>
-            </div>
-            <div class="editor-wrap">
-                <div class="line-numbers" id="line-numbers"></div>
-                <textarea id="code-editor" spellcheck="false" autocomplete="off"
-                    placeholder="# Paste Python code here and click Analyse"></textarea>
-            </div>
-            <div class="editor-toolbar">
-                <button class="btn btn-run" id="btn-analyse">▶ Analyse</button>
-                <button class="btn btn-ghost" id="btn-clear">Clear</button>
-                <span class="run-status" id="run-status"></span>
-            </div>
-        </div>
+<h2>Python 2 vs 3 — detection harness (minimal)</h2>
 
-        <div class="results-pane">
-            <div class="summary-bar" id="summary-bar" style="display:none">
-                <span id="cnt-critical" class="count-badge"><span class="dot dot-critical"></span><span>0</span> critical</span>
-                <span id="cnt-high" class="count-badge"><span class="dot dot-high"></span><span>0</span> high</span>
-                <span id="cnt-medium" class="count-badge"><span class="dot dot-medium"></span><span>0</span> medium</span>
-            </div>
-            <div class="findings-list" id="findings-list">
-                <div class="empty-state">
-                    <div class="empty-icon">⚡</div>
-                    <div class="empty-text">Write or paste code, then click Analyse</div>
-                </div>
-            </div>
-            <div class="probe-section" id="probe-section" style="display:none">
-                <div class="probe-title">Dynamic probes — actual py2 vs py3 values</div>
-                <div id="probe-rows"></div>
-            </div>
+<textarea id="editor" placeholder="# paste Python code here"></textarea>
+<br>
+<button onclick="analyse()">Analyse</button>
+<button onclick="document.getElementById('editor').value=''; document.getElementById('output').innerHTML=''" style="background:#333;color:#aaa;margin-left:8px">Clear</button>
 
-            <div class="exec-pane">
-                <div class="exec-header">
-                    <span class="pane-label">Output Comparison</span>
-                </div>
-                <div class="exec-outputs">
-                    <div class="exec-out">
-                        <div class="exec-out-hdr">
-                            <span class="exec-out-label lpy2">Python 2</span>
-                        </div>
-                        <div class="exec-result empty" id="exec-py2">Ready...</div>
-                    </div>
-                    <div class="exec-out">
-                        <div class="exec-out-hdr">
-                            <span class="exec-out-label lpy3">Python 3</span>
-                        </div>
-                        <div class="exec-result empty" id="exec-py3">Ready...</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-<script src="js/filbert.js"></script>
-<script type="module" src="js/main.js"></script>
+<div id="output"></div>
+
+<!--
+  Load order matters — each file depends on the ones above it:
+  1. layer1.js  — no dependencies
+  2. layer2.js  — no dependencies
+  3. layer3.js  — no dependencies
+  4. main.js    — calls layer1(), layer2(), layer3()
+-->
+<script src="js/layer1.js"></script>
+<script src="js/layer2.js"></script>
+<script src="js/layer3.js"></script>
+<script src="js/main.js"></script>
+
 </body>
 </html>

@@ -1,92 +1,61 @@
-/**
- * main.js - Coordination logic
- * Integrating Manual AST Walker for Layer 2
- */
-import { PreParsedRules, SemanticAnalyzer } from "./rules.js";
-import { ProbeEngine } from "./probes.js";
-import { ExecutionEngine } from "./engine.js";
-import { UI, SAMPLES } from "./ui.js";
+// main.js — entry point
+// Calls all three layers, renders output to the DOM.
+// Depends on: layer1.js, layer2.js, layer3.js
+// Exports:     analyse(), render()
 
-// Note: Ensure filbert.js is loaded in index.html via <script>
-// or imported if using a bundler.
+function analyse() {
+  const code = document.getElementById('editor').value.trim();
+  if (!code) return;
 
-const handleAnalyse = () => {
-  const code = document.getElementById("code-editor").value;
-  if (!code.trim()) return;
+  // Run the three layers
+  const l1  = layer1(code);
+  const l2  = layer2(code);
+  const all = [...l1, ...l2].sort((a, b) => a.line - b.line);
+  const probes = layer3(all);
 
-  // --- LAYER 1: Pre-Parse (Regex) ---
-  const findingsL1 = PreParsedRules.run(code);
+  // Render
+  document.getElementById('output').innerHTML = render(all, probes);
+}
 
-  // --- LAYER 2: Semantic Analysis (Manual AST Walker) ---
-  let findingsL2 = [];
-  try {
-    // We use filbert to get the JSON AST.
-    // {locations: true} is critical so the walker knows what line to report.
-    const ast = filbert.parse(code, { locations: true });
 
-    // This calls your transparent, manual recursive walker
-    findingsL2 = SemanticAnalyzer.analyze(ast);
-  } catch (e) {
-    console.warn("AST Parsing skipped or failed: ", e.message);
-    // If parsing fails (e.g., Python syntax is too broken),
-    // we still have Layer 1 findings to show.
-  }
+function render(findings, probes) {
+  let html = '';
 
-  // Combine findings from both layers
-  const allFindings = [...findingsL1, ...findingsL2].sort(
-    (a, b) => a.line - b.line,
-  );
-
-  // --- LAYER 3: Dynamic Probes & Execution ---
-  const probes = ProbeEngine.run(allFindings);
-  const execResults = ExecutionEngine.run(code);
-
-  // --- UI UPDATES ---
-  UI.renderFindings(allFindings);
-  UI.renderProbes(probes);
-  UI.renderExecution(execResults);
-
-  document.getElementById("run-status").textContent =
-    `Analysis complete: ${allFindings.length} issues found.`;
-};
-
-// --- INITIALIZATION ---
-document.addEventListener("DOMContentLoaded", () => {
-  // Analyse Button
-  document
-    .getElementById("btn-analyse")
-    .addEventListener("click", handleAnalyse);
-
-  // Clear Button
-  document.getElementById("btn-clear").addEventListener("click", () => {
-    document.getElementById("code-editor").value = "";
-    UI.updateLineNumbers();
-    document.getElementById("run-status").textContent = "";
-  });
-
-  // Keyboard Shortcut (Ctrl+Enter)
-  document.getElementById("code-editor").addEventListener("keydown", (e) => {
-    if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
-      e.preventDefault();
-      handleAnalyse();
-    }
-  });
-
-  // Inject Samples into the UI
-  const sampleContainer = document.getElementById("sample-container");
-  if (sampleContainer) {
-    Object.keys(SAMPLES).forEach((key) => {
-      const btn = document.createElement("button");
-      btn.className = "sample-chip";
-      btn.textContent = key;
-      btn.onclick = () => {
-        document.getElementById("code-editor").value = SAMPLES[key];
-        UI.updateLineNumbers();
-        handleAnalyse();
-      };
-      sampleContainer.appendChild(btn);
+  // ── Findings ────────────────────────────────────────────────────
+  if (findings.length === 0) {
+    html += `<div class="no-findings">✓ No migration issues found</div>`;
+  } else {
+    html += `<div class="section-title">${findings.length} finding${findings.length !== 1 ? 's' : ''}</div>`;
+    findings.forEach(f => {
+      html += `
+        <div class="finding ${f.severity}">
+          <span class="sev ${f.severity}">${f.severity}</span>
+          <span class="rule-id"> · ${f.rule} · line ${f.line}</span>
+          <div class="msg">${f.message}</div>
+          <div class="snippet">${f.snippet}</div>
+          <div class="compare">
+            <div class="py2-box"><div class="ver-label">Python 2</div>${f.py2}</div>
+            <div class="py3-box"><div class="ver-label">Python 3</div>${f.py3}</div>
+          </div>
+        </div>`;
     });
   }
 
-  UI.updateLineNumbers();
-});
+  // ── Probe table ─────────────────────────────────────────────────
+  if (probes.length > 0) {
+    html += `<div class="section-title">computed values — actual py2 vs py3</div>`;
+    html += `<table class="probe-table">
+      <tr><th>expression</th><th>Python 2</th><th>Python 3</th><th>result</th></tr>`;
+    probes.forEach(p => {
+      html += `<tr>
+        <td>${p.expr}</td>
+        <td style="color:#e8673a">${p.py2}</td>
+        <td style="color:#4a9eff">${p.py3}</td>
+        <td class="${p.diverges ? 'diverges' : 'same'}">${p.diverges ? '⚠ DIVERGES' : '✓ same'}</td>
+      </tr>`;
+    });
+    html += `</table>`;
+  }
+
+  return html;
+}
