@@ -7,7 +7,7 @@ function analyse() {
   const code = document.getElementById('editor').value.trim();
   if (!code) return;
 
-  // Run the three layers
+  // Runs the three layers
   const l1  = layer1(code);
   const l2  = layer2(code);
   const all = [...l1, ...l2].sort((a, b) => a.line - b.line);
