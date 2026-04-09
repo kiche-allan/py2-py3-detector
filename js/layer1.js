@@ -73,7 +73,7 @@ function layer1(code) {
     const line = rawLine.trim(); // strip indentation
     const lineNo = index + 1; // 1-based line numbers
 
-    if (line.startsWith("#")) return; // skip comments
+    if (line.startsWith("#")) return;
 
     LAYER1_RULES.forEach((rule) => {
       if (rule.pattern.test(line)) {
