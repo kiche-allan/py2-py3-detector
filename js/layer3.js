@@ -2,12 +2,26 @@
 // Simulates Python 2 arithmetic and compares to Python 3.
 // Depends on: nothing
 // Exports:     PROBES, layer3(findings)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 function probeMRO() {
     return [
         { 
             expr: 'Diamond: D(B,C), B(A), C(A)', 
-            py2: '[D, B, A, C]', // Py2 goes deep: D -> B -> A (then stops at A)
-            py3: '[D, B, C, A]', // Py3 ensures siblings (B,C) are checked before grandparent (A)
+            py2: '[D, B, A, C]', 
+            py3: '[D, B, C, A]', 
             diverges: true 
         }
     ];
