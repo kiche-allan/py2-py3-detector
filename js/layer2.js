@@ -94,6 +94,16 @@ const LAYER2_RULES = [
     py3: 'RuntimeError: dictionary changed size during iteration',
     requiresBlockCheck: true,  // look ahead for .pop() / del
   },
+{
+    id: 'MRO_DIVERGENCE',
+    severity: 'high',
+    // class Name(A, B) — two or more parents
+    pattern: /class\s+\w+\s*\(\s*\w[\w.]*\s*,\s*\w/,
+    message: 'multiple inheritance — MRO differs between py2 and py3',
+    py2: 'depth-first: may skip intermediate class overrides',
+    py3: 'C3 linearisation: consistent ordering, respects hierarchy',
+    probe: { type: 'mro' },
+}
 ];
 
 

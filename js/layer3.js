@@ -2,6 +2,16 @@
 // Simulates Python 2 arithmetic and compares to Python 3.
 // Depends on: nothing
 // Exports:     PROBES, layer3(findings)
+function probeMRO() {
+    return [
+        { 
+            expr: 'Diamond: D(B,C), B(A), C(A)', 
+            py2: '[D, B, A, C]', // Py2 goes deep: D -> B -> A (then stops at A)
+            py3: '[D, B, C, A]', // Py3 ensures siblings (B,C) are checked before grandparent (A)
+            diverges: true 
+        }
+    ];
+}
 
 function py2div(a, b) {
   if (Number.isInteger(a) && Number.isInteger(b)) return Math.floor(a / b);
@@ -87,6 +97,7 @@ const PROBES = {
   zip:       probeZip,
   dict_keys: probeDictKeys,
   bytes_str: probeBytesStr,
+  mro:       probeMRO,
 };
 
 
