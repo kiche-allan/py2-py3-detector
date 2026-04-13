@@ -116,6 +116,16 @@ const LAYER2_RULES = [
     py3: "C3 Linearization — guaranteed monotonic and consistent",
     probe: { type: "mro" },
   },
+  {
+    id: 'SUPER_NO_ARGS',
+    severity: 'high',
+    // super() with no arguments — py3 only syntax
+    pattern: /\bsuper\s*\(\s*\)/,
+    message: 'super() without arguments — fails in Python 2',
+    py2: 'TypeError: super() takes at least 1 argument',
+    py3: 'super() works — no arguments needed',
+    probe: { type: "super_no_args" },
+},
 ];
 
 function layer2(code) {

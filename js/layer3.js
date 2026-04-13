@@ -27,6 +27,18 @@ function probeMRO() {
     ];
 }
 
+
+function probeSuperNoArgs() {
+  return [
+    {
+      expr: 'super() with no arguments',
+      py2: 'TypeError: super() takes at least 1 argument',
+      py3: 'super() works — class and instance inferred automatically',
+      diverges: true
+    }
+  ];
+}
+
 function py2div(a, b) {
   if (Number.isInteger(a) && Number.isInteger(b)) return Math.floor(a / b);
   return a / b;
@@ -112,6 +124,7 @@ const PROBES = {
   dict_keys: probeDictKeys,
   bytes_str: probeBytesStr,
   mro:       probeMRO,
+  super_no_args: probeSuperNoArgs,
 };
 
 

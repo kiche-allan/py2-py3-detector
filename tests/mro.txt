@@ -1,3 +1,18 @@
+1. The Basic Concept: What is MRO?
+In multiple inheritance, if Class C inherits from A and B, and both A and B have a method called save(), which one does C use?
+
+Python 2 (Old): Uses DFS (Depth-First Search). It goes as deep as possible into the first parent before looking at the second.
+
+Python 3 (New): Uses C3 Linearization. It ensures that a child always comes before its parents and that the order of parents is preserved, avoiding the "Diamond Problem."
+
+2. The Implementation Step-by-Step
+To detect this, we need to add a rule to Layer 2 that identifies class definitions with multiple parents.
+
+Step A: Detection (Layer 2)
+Add this to your LAYER2_RULES in layer2.js. We are looking for the "Diamond" pattern or multiple inheritance.
+
+Step 1 — Understand the two MRO scenarios you need to detect
+DIAMOND INHERITANCE
 class A:
     def method(self): return "A"
 
@@ -13,3 +28,31 @@ class D(B, C):
 D().method()
 # Python 2: returns "A"  ← goes deep into B first, finds A
 # Python 3: returns "C"  ← C3 algorithm finds C first
+
+
+Scenario 2: super() syntax change
+python# Python 2
+class B(A):
+    def method(self):
+        super(B, self).method()   # must pass class and self explicitly
+
+# Python 3
+class B(A):
+    def method(self):
+        super().method()           # no arguments needed
+Python 2 code using super() without arguments breaks in Python 2. Python 3 code using super() without arguments does not exist in Python 2. Both are detectable with regex.
+Scenario 3: Old-style vs new-style classes
+python# Python 2 old-style (does not inherit from object)
+class A:
+    pass
+
+# Python 2 new-style (inherits from object explicitly)
+class A(object):
+    pass
+
+# Python 3 — all classes are new-style automatically
+class A:
+    pass
+
+Step 2 — Understand what the regex patterns need to catch
+Step 3 — Understand what the finding object should look like
