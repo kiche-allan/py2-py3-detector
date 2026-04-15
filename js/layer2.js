@@ -126,6 +126,72 @@ const LAYER2_RULES = [
     py3: 'super() works — no arguments needed',
     probe: { type: "super_no_args" },
 },
+  // ── String rules ───────────────────────────────────────────────────
+ 
+  {
+    id: 'BASESTRING', severity: 'critical',
+    // basestring was the common parent of str and unicode in Python 2
+    // it does not exist in Python 3
+    pattern: /\bbasestring\b/,
+    message: 'basestring does not exist in Python 3',
+    py2: 'isinstance(x, basestring) → True for both str and unicode',
+    py3: 'NameError: name "basestring" is not defined',
+    probe: { type: 'string' },
+  },
+  {
+    id: 'UNICODE_LITERAL', severity: 'medium',
+    // u"..." prefix — works in both but signals Python 2 era code
+    // Python 2: creates a unicode object distinct from str
+    // Python 3: str is always unicode, the u prefix is redundant
+    pattern: /\bu["']/,
+    message: 'unicode literal u"..." — redundant in Python 3',
+    py2: 'u"hello" → <type "unicode"> — distinct from str',
+    py3: 'u"hello" → <class "str"> — same as "hello", u prefix ignored',
+    probe: { type: 'string' },
+  },
+  {
+    id: 'UNICODE_METHOD', severity: 'high',
+    // def __unicode__(self) — Python 2 method for unicode representation
+    // Python 3 never calls __unicode__, only __str__
+    pattern: /def\s+__unicode__\s*\(/,
+    message: '__unicode__ method — silently ignored in Python 3',
+    py2: 'unicode(obj) calls __unicode__ — unicode representation returned',
+    py3: '__unicode__ never called — unicode() does not exist in py3',
+    probe: { type: 'string' },
+  },
+  {
+    id: 'ENCODE_NO_ARG', severity: 'medium',
+    // .encode() with no arguments
+    // Python 2: str is bytes — often a no-op for ASCII
+    // Python 3: str is unicode — encode() returns bytes (utf-8 default)
+    pattern: /\.encode\s*\(\s*\)/,
+    message: '.encode() without arguments — different behaviour in py2 vs py3',
+    py2: '"hello".encode() → "hello"  (str, no-op for ASCII content)',
+    py3: '"hello".encode() → b"hello" (bytes, encodes as utf-8)',
+    probe: { type: 'string' },
+  },
+  {
+    id: 'BYTES_CONCAT', severity: 'critical',
+    // b"..." + something — bytes concatenation
+    // Python 2: b"x" is just str — concatenation works
+    // Python 3: bytes + str raises TypeError
+    pattern: /b["'].*["']\s*\+/,
+    message: 'bytes + str concatenation — TypeError in Python 3',
+    py2: 'b"hello" + "world" → "helloworld"  (both are str in py2)',
+    py3: 'TypeError: can\'t concat str to bytes',
+    probe: { type: 'string' },
+  },
+  {
+    id: 'BYTES_FORMAT', severity: 'high',
+    // "%s" % b"..." — formatting bytes into a string
+    // Python 2: b"x" is str — formats as the value "hello"
+    // Python 3: b"x" is bytes — formats as the repr "b'hello'"
+    pattern: /["']%s["']\s*%\s*b["']/,
+    message: '"%s" % b"..." — shows repr in py3, not the value',
+    py2: '"%s" % b"hello" → "hello"      (bytes is str in py2)',
+    py3: '"%s" % b"hello" → "b\'hello\'" (repr of bytes object)',
+    probe: { type: 'string' },
+  },
 ];
 
 function layer2(code) {

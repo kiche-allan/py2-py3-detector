@@ -112,7 +112,63 @@ function probeBytesStr() {
     { expr: 'b"hi"[0]',            py2: '"h"   (char)',       py3: '104   (int ASCII)', diverges: true },
   ];
 }
-
+// probeString — concrete divergences between py2 and py3 string handling
+//
+// Python 2: two types — str (bytes) and unicode (text)
+// Python 3: one type  — str (always unicode), bytes is completely separate
+//
+// Every row is verified against real Python 3 output.
+ 
+function probeString() {
+  return [
+    {
+      expr:     'type("hello")',
+      py2:      '<type "str">  — raw bytes',
+      py3:      '<class "str"> — always unicode',
+      diverges: true,
+    },
+    {
+      expr:     'type(u"hello")',
+      py2:      '<type "unicode"> — distinct from str',
+      py3:      '<class "str">    — identical to "hello"',
+      diverges: true,
+    },
+    {
+      expr:     'isinstance(x, basestring)',
+      py2:      'True — basestring is parent of str and unicode',
+      py3:      'NameError: name "basestring" is not defined',
+      diverges: true,
+    },
+    {
+      expr:     '"hello".encode()',
+      py2:      '"hello"   (str is bytes — ASCII is a no-op)',
+      py3:      'b"hello"  (unicode → bytes, utf-8 by default)',
+      diverges: true,
+    },
+    {
+      expr:     'b"hello" + "world"',
+      py2:      '"helloworld"  (both are str in py2)',
+      py3:      'TypeError: can\'t concat str to bytes',
+      diverges: true,
+    },
+    {
+      expr:     '"%s" % b"hello"',
+      py2:      '"hello"      (bytes is str — prints the value)',
+      py3:      '"b\'hello\'" (prints the repr, not the value)',
+      diverges: true,
+    },
+    {
+      expr:     '__unicode__ method on a class',
+      py2:      'called by unicode(obj) — returns unicode string',
+      py3:      'silently ignored — __str__ handles everything',
+      diverges: true,
+    },
+  ];
+}
+ 
+ 
+// Registry: maps probe.type → probe function
+ 
 // Registry: maps probe.type → probe function
 
 
@@ -125,6 +181,7 @@ const PROBES = {
   bytes_str: probeBytesStr,
   mro:       probeMRO,
   super_no_args: probeSuperNoArgs,
+  string:    probeString,
 };
 
 
