@@ -11,7 +11,9 @@ function analyse() {
   const l1  = layer1(code);
   const l2  = layer2(code);
   const all = [...l1, ...l2].sort((a, b) => a.line - b.line);
-  const probes = layer3(all);
+  //conditional logic, only run layer3 if there are findings with a probe field
+    const hasProbes = all.some(f => f.probe);
+    const probes    = hasProbes ? layer3(all) : [];
 
   // Render
   document.getElementById('output').innerHTML = render(all, probes);
